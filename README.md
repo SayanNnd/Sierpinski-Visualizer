@@ -1,6 +1,6 @@
 # Sierpinski Visualizer
 
-A live Sierpinski triangle drawn with the **chaos game**, written in C++ with [raylib](https://www.raylib.com/). 
+A live Sierpinski triangle drawn with the **chaos game**, written in C++ with [raylib](https://www.raylib.com/).
 Pick a starting point, watch the first few jumps step by step, then watch millions of points per second fill in the fractal.
 
 ## The idea
@@ -9,7 +9,7 @@ Pick a starting point, watch the first few jumps step by step, then watch millio
 2. Pick a corner at random and jump halfway towards it.
 3. Plot the new point, then repeat.
 
-Whatever the starting point is, the plotted points settle onto the Sierpinski triangle. 
+Whatever the starting point is, the plotted points settle onto the Sierpinski triangle.
 Each jump halves the distance to a corner, so any starting error shrinks by half every step and is smaller than a pixel after about 20 steps.
 The first 20 points are skipped in this implementation to avoid errors.
 
