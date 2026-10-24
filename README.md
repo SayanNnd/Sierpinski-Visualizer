@@ -59,11 +59,12 @@ These are single runs on one machine, so treat them as rough figures.
 | Adaptive cap, 70% frame budget | ~118 | 11.48M |
 | Adaptive cap, 90% frame budget | ~116 | 15.14M |
 
-**Version 2: points written into a CPU pixel array, uploaded once per frame** (1080x1080 window)
+**Version 2: points written into a CPU pixel array, uploaded once per frame** (1080x1080 window, adaptive cap, 90% frame budget)
 
-| Setting | FPS | Points / second |
+| Random number generator | FPS | Points / second |
 |---|---|---|
-| Adaptive cap, 90% frame budget | ~119 | ~180M |
+| raylib `GetRandomValue` | ~119 | ~180M |
+| xorshift64 | ~119 | ~420M |
 
 Notes:
 

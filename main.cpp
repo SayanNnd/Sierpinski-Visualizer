@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include  <chrono>
 #include <cmath>
 #include <cstdint>
 #include <iterator>
@@ -8,6 +9,7 @@
 
 static void reset_window(int &warmup, int &whole, double &rate, double &credit, uint64_t &points_counter, uint64_t &lastCount, bool &paused, bool &started, bool &firstTime, std::vector<Color> &points);
 static Vector2 midpoint(const Vector2 &a, const Vector2 &b);
+static uint64_t random_next(uint64_t &num);
 
 constexpr float ScreenWidth = 1080;
 constexpr float ScreenHeight = 1080;
@@ -37,7 +39,7 @@ int main() {
     double cost = 100e-9;
     int cap = static_cast<int>(budget/cost);
     int warmup = 20;
-    int next_corner = 0;
+    uint64_t next = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();;
     uint64_t points_counter = 0;
     uint64_t lastCount = 0;
     bool paused = false;
@@ -64,7 +66,7 @@ int main() {
         }
         if (!started && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             point = GetMousePosition();
-            next_corner = GetRandomValue(0, static_cast<int>(n)-1);
+            next = random_next(next);
             started = true;
             lastTime = GetTime();
         }
@@ -81,8 +83,8 @@ int main() {
             else  if (rate*GetFrameTime() <= cap) rate *= std::pow(1.75, GetFrameTime());
 
             for (int i{0}; i<whole; i++) {
-                point = midpoint(point, corners[next_corner]);
-                next_corner = GetRandomValue(0, static_cast<int>(n)-1);
+                point = midpoint(point, corners[next%3]);
+                next = random_next(next);
                 if (warmup>0) {
                     points_counter++;
                     warmup--;
@@ -122,7 +124,7 @@ int main() {
             }
             //Warmup-Phase Temporary Drawing
             if (started && warmup >= 0 && rate <= 1e5) {
-                const Vector2 target = corners[next_corner];
+                const Vector2 target = corners[next%3];
                 DrawLineV(point, target, BLUE);
                 DrawCircleV(point, 3, YELLOW);
                 DrawCircleV(midpoint(point, target), 5, GREEN);
@@ -140,6 +142,13 @@ int main() {
     UnloadTexture(tex);
     CloseWindow();
     return 0;
+}
+
+uint64_t random_next(uint64_t &num) {
+    num ^= num<<13;
+    num ^= num>>7;
+    num ^= num<<17;
+    return num;
 }
 
 Vector2 midpoint(const Vector2 &a, const Vector2 &b) {
