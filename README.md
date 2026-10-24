@@ -17,10 +17,10 @@ The first 20 points are skipped in this implementation to avoid errors.
 
 ## Features
 
-- **Live accumulation:** points are drawn into an offscreen render texture that is never cleared, so the fractal builds up on screen.
+- **Live accumulation:** points are written into a CPU-side pixel array that is never cleared, and the array is uploaded to a texture once per frame, so the fractal builds up on screen.
 - **Choose your own start:** left-click anywhere, even far outside the triangle, and watch it converge.
-- **Step-by-step demo:** the first 20 jumps are shown slowly to visualize the creation of the fractal.
-- **Adaptive step cap:** the program measures how long one step takes and limits the steps per frame to fit a time budget, so the frame rate holds near its target on weaker hardware.
+- **Step-by-step demo:** the first 20 jumps are shown slowly to visualize the creation of the fractal, then the rate of points ramps up smoothly to full speed.
+- **Adaptive step cap:** the program measures how long one step takes and limits the steps per frame to fit a time budget (after subtracting the texture upload time), so the frame rate holds near its target on weaker hardware.
 - **Live stats:** FPS, total points, and points per second.
 
 ## Controls
@@ -49,7 +49,10 @@ Developed on Windows with CLion and MinGW.
 
 ## Benchmarks
 
-Measured on a laptop with an RTX 5050, plugged in, running in DGPU mode, Release build, single-threaded point generation.
+Measured on a laptop with a Mobile RTX 5050, plugged in, running in DGPU mode, Release build, single-threaded point generation.
+These are single runs on one machine, so treat them as rough figures.
+
+**Version 1: points drawn with `DrawPixelV` into a render texture**
 
 | Setting | FPS | Points / second |
 |---|---|---|
@@ -58,12 +61,20 @@ Measured on a laptop with an RTX 5050, plugged in, running in DGPU mode, Release
 | Adaptive cap, 70% frame budget | ~118 | 11.48M |
 | Adaptive cap, 90% frame budget | ~116 | 15.14M |
 
+**Version 2: points written into a CPU pixel array, uploaded once per frame** (1080x1080 window)
+
+| Setting | FPS | Points / second |
+|---|---|---|
+| Adaptive cap, 90% frame budget | ~119 | ~180M |
+
 Notes:
 
 - At a fixed 100,000 steps the rate is just `steps × FPS`. The frame cap sets it, not the CPU.
-- The 16.57M figure is the single-thread ceiling of the current design. At 300,000 steps per frame the frame rate collapses and the rate drops.
+- In version 1 the rate topped out around 16M points per second. At 300,000 steps per frame the frame rate collapses and the rate drops.
 - With an adaptive budget the throughput is roughly `budget fraction ÷ cost per step`, so a larger budget means more points per second and less spare time per frame.
-- The generation loop runs on the CPU. The GPU only displays the finished image. (--Key Issue to work on for Next Version)
+- Version 2 is about 12x faster than version 1 at the same 90% budget. Most of the old cost was in raylib's drawing path (every `DrawPixelV` call became vertices in a batch buffer), not in the random number and midpoint math. The cost per step dropped from roughly 60 ns to roughly 5 ns (estimated from the measured rates).
+- The point generation still runs on the CPU. The GPU only displays the finished image. (--Key Issue to work on for Next Version)
+- Points per second counts steps, not visual progress. Once the fractal has filled in, most new points land on pixels that are already red.
 
 ## Roadmap
 
