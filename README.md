@@ -71,7 +71,7 @@ Notes:
 - At a fixed 100,000 steps the rate is just `steps × FPS`. The frame cap sets it, not the CPU.
 - In version 1 the rate topped out around 16M points per second. At 300,000 steps per frame the frame rate collapses and the rate drops.
 - With an adaptive budget the throughput is roughly `budget fraction ÷ cost per step`, so a larger budget means more points per second and less spare time per frame.
-- Version 2 is about 12x faster than version 1 at the same 90% budget. Most of the old cost was in raylib's drawing path (every `DrawPixelV` call became vertices in a batch buffer), not in the random number and midpoint math. The cost per step dropped from roughly 60 ns to roughly 5 ns (estimated from the measured rates).
+- Version 2 is about 28x faster than version 1 at the same 90% budget. Most of the old cost was in raylib's drawing path (every `DrawPixelV` call became vertices in a batch buffer) and raylib `GetRandomValue`, not in the midpoint math. The cost per step dropped from roughly 60 ns to roughly 5 ns without xorshift64 and 2ns with xorshift64 (These are estimated from the measured rates and the frame budget.).
 - The point generation still runs on the CPU. The GPU only displays the finished image. (--Key Issue to work on for Next Version)
 - Points per second counts steps, not visual progress. Once the fractal has filled in, most new points land on pixels that are already red.
 
