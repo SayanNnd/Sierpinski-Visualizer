@@ -3,8 +3,6 @@
 A live Sierpinski triangle drawn with the **chaos game**, written in C++ with [raylib](https://www.raylib.com/).
 Pick a starting point, watch the first few jumps step by step, then watch millions of points per second fill in the fractal.
 
-https://github.com/user-attachments/assets/cf932763-0052-4af7-9dd8-21f9545b161d
-
 ## The idea
 
 1. Take three corners of a triangle and any starting point.
