@@ -100,7 +100,6 @@ These are single runs on one machine, so treat them as rough figures.
 
 ## Roadmap
 
-- Dynamic work distribution (threads take chunks from a shared counter) so fast threads do not wait for slow ones
 - A separate OpenGL rendering experiment: a fragment shader deciding each pixel on the GPU, with zoom and pan
 - More shapes and jump ratios (square, pentagon, Barnsley fern)
 - A CUDA version and a CPU / GPU comparison
