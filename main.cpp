@@ -6,6 +6,7 @@
 #include <iterator>
 #include <vector>
 #include <thread>
+#include <deque>
 #include "raylib.h"
 
 #define FPS 120
@@ -20,6 +21,10 @@ namespace {
         uint64_t rng = 1;
         mutable uint64_t done = 0;
         std::vector<uint8_t> flags;
+    };
+    struct Sample {
+        double time;
+        uint64_t points;
     };
 }
 
@@ -82,11 +87,14 @@ int main(int argc, char** argv) {
     double drawTime = 0;
     std::vector<Color> points(pixelCount,BLACK);
     std::vector<Worker> threads_details (thread_count-1);
+    std::deque<Sample> historyWindow;
     for (auto &details : threads_details) details.flags.assign(pixelCount,0);
     bool workersReady = false;
     double at = 0;
     double bt = 0;
     double ct = 0;
+    double max_draw_rate = 0;
+    double avg_draw_rate_5s = 0;
 
     //Loop
     while (!WindowShouldClose()) {
@@ -100,6 +108,7 @@ int main(int argc, char** argv) {
         if (IsKeyPressed(KEY_R)) {
             reset_window(warmup, whole, rate, credit, points_counter, lastCount,
                 paused, started, workersReady, firstTime, std::ref(points), std::ref(threads_details));
+            historyWindow.clear();
         }
         if (!started && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
             point = GetMousePosition();
@@ -181,7 +190,25 @@ int main(int argc, char** argv) {
 
         // Rate Limiter for Points/Second Counter
         if (currTime - lastTime >= 0.5) {
+            if (started && !paused) {
+                historyWindow.push_back({currTime, points_counter});
+                while (!historyWindow.empty() && currTime - historyWindow.front().time > 5.0) {
+                    historyWindow.pop_front();
+                }
+                if (historyWindow.size() >= 2) {
+                    double timeSpan = historyWindow.back().time - historyWindow.front().time;
+                    uint64_t pointsSpan = historyWindow.back().points - historyWindow.front().points;
+                    avg_draw_rate_5s = timeSpan > 0.0 ? static_cast<double>(pointsSpan) / timeSpan : 0.0;
+                } else {
+                    avg_draw_rate_5s = static_cast<double>(points_counter - lastCount) / (currTime - lastTime);
+                }
+            }
+            else {
+                historyWindow.clear();
+                avg_draw_rate_5s = 0.0;
+            }
             draw_rate = static_cast<double>(points_counter-lastCount)/(currTime-lastTime);
+            max_draw_rate = std::max(max_draw_rate, draw_rate);
             lastCount = points_counter;
             lastTime = currTime;
         }
@@ -204,12 +231,13 @@ int main(int argc, char** argv) {
             }
             if (benchmark) {
                 DrawFPS(10, 10);
-                DrawText(TextFormat("Points :- %.2fM",static_cast<double>(points_counter)/1e6),10, 40, 20, GREEN);
-                DrawText(TextFormat("Rate :- %.2fM Points/Second",draw_rate/1e6),10, 70, 20, GREEN);
+                DrawText(TextFormat("Points :- %.2fM",static_cast<double>(points_counter)/1e6),10, 40, 19, GREEN);
+                DrawText(TextFormat("Rate :- %.2fM Points/Second || Max Rate :- %.2fM Points/Second || Average Rate :- %.2fM Points/Second"
+                    ,draw_rate/1e6, max_draw_rate/1e6, avg_draw_rate_5s/1e6),10, 70, 19, BLUE);
                 DrawText(TextFormat("cap %d  whole %d  cost %.1f ns  join %.2f ms  merge %.2f ms  draw %.2f ms",
-                    cap, whole, cost*1e9, (bt-at)*1e3, (ct-bt)*1e3, drawTime*1e3), 10, 100, 20, WHITE);
+                    cap, whole, cost*1e9, (bt-at)*1e3, (ct-bt)*1e3, drawTime*1e3), 10, 100, 19, RED);
+                DrawText(TextFormat("threads %d", static_cast<int>(thread_count)), 10, 130, 19, WHITE);
             }
-            DrawText(TextFormat("threads %d", static_cast<int>(thread_count)), 10, 130, 20, WHITE);
             DrawText(TextFormat("Press \"R\" Key to Reset the Screen"),10, ScreenHeight-60, 15, RED);
             DrawText(TextFormat("Press \"B\" Key to Enable/Disable Benchmark Mode"),10, ScreenHeight-40, 15, GREEN);
             DrawText(TextFormat("Press \"SPACE\" Key to Pause/Unpause the Screen"),10, ScreenHeight-20, 15, YELLOW);
