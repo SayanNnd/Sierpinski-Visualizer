@@ -47,6 +47,18 @@ Always benchmark with a **Release** build. The Debug build has no optimisation a
 The number of threads is set by `thread_count` at the top of `main.cpp`. It defaults to `hardware_concurrency() / 4`, which is 4 on the development machine.
 Developed on Windows with CLion and MinGW.
 
+## Usage
+
+Run the executable (with the Visual Studio generator it is in `build\Release\`, otherwise in `build/`):
+
+```
+Sierpinski_Visualizer
+Sierpinski_Visualizer --threads 4
+```
+
+`--threads N` (or `-t N`) sets the number of threads used for point generation. N must be between 1 and the number of logical processors. Without it, the default is `hardware_concurrency() / 4` (4 on the development machine).
+
+
 ## Benchmarks
 
 Measured on a laptop with an AMD Ryzen 7 260 (8 cores / 16 threads) and a Mobile RTX 5050, plugged in, running in DGPU mode, Release build, 1080x1080 window, adaptive cap at 90% of the frame budget.

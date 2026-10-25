@@ -13,7 +13,7 @@ constexpr float ScreenWidth = 1080;
 constexpr float ScreenHeight = 1080;
 constexpr double budget = 0.9/FPS;
 constexpr size_t pixelCount = ScreenWidth*ScreenHeight;
-const size_t thread_count = std::max<size_t>(1,std::thread::hardware_concurrency()/4);
+size_t thread_count = std::max<size_t>(1,std::thread::hardware_concurrency()/2);
 namespace {
     struct Worker {
         Vector2  point{};
@@ -31,7 +31,22 @@ static Vector2 midpoint(const Vector2 &a, const Vector2 &b);
 static uint64_t random_next(uint64_t &num);
 static uint64_t splitmix64(uint64_t &state);
 
-int main() {
+int main(int argc, char** argv) {
+    for (int i = 1; i < argc; i++) {
+        const std::string a = argv[i];
+        if ((a == "--threads" || a == "-t") && i+1 < argc) {
+            const long v = std::strtol(argv[++i], nullptr, 10);
+            if (v < 1 || v > static_cast<long>(std::thread::hardware_concurrency())) {
+                std::fprintf(stderr, "threads must be between 1 and %zu\n", std::thread::hardware_concurrency());
+                return 1;
+            }
+            thread_count = static_cast<size_t>(v);
+        } else {
+            std::fprintf(stderr, "usage: %s [--threads N]\n", argv[0]);
+            return 1;
+        }
+    }
+
     //Window
     InitWindow(static_cast<int>(ScreenWidth), static_cast<int>(ScreenHeight), "Sierpinski Triangle");
     const Image img = GenImageColor(ScreenWidth, ScreenHeight, BLACK);
@@ -194,6 +209,7 @@ int main() {
                 DrawText(TextFormat("cap %d  whole %d  cost %.1f ns  join %.2f ms  merge %.2f ms  draw %.2f ms",
                     cap, whole, cost*1e9, (bt-at)*1e3, (ct-bt)*1e3, drawTime*1e3), 10, 100, 20, WHITE);
             }
+            DrawText(TextFormat("threads %d", static_cast<int>(thread_count)), 10, 130, 20, WHITE);
             DrawText(TextFormat("Press \"R\" Key to Reset the Screen"),10, ScreenHeight-60, 15, RED);
             DrawText(TextFormat("Press \"B\" Key to Enable/Disable Benchmark Mode"),10, ScreenHeight-40, 15, GREEN);
             DrawText(TextFormat("Press \"SPACE\" Key to Pause/Unpause the Screen"),10, ScreenHeight-20, 15, YELLOW);
@@ -255,7 +271,10 @@ void worker(Worker &details, const std::vector<Vector2> &corners, const int step
 }
 
 void merge(const std::vector<Worker> &ws, std::vector<Color> &points, uint64_t &points_counter) {
-    for (auto &w : ws) { points_counter += w.done; w.done = 0; }
+    for (auto &w : ws) {
+        points_counter += w.done;
+        w.done = 0;
+    }
     auto slice = [&](const size_t lo, const size_t hi) {
         for (auto &w : ws) {
             for (size_t i = lo; i < hi; i++) if (w.flags[i]) points[i] = RED;
