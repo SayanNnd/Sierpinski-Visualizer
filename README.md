@@ -56,8 +56,7 @@ Sierpinski_Visualizer
 Sierpinski_Visualizer --threads 4
 ```
 
-`--threads N` (or `-t N`) sets the number of threads used for point generation. N must be between 1 and the number of logical processors. Without it, the default is `hardware_concurrency() / 4` (4 on the development machine).
-
+`--threads N` (or `-t N`) sets the number of threads used for point generation. N must be between 1 and the number of logical processors. Without it, the default is `hardware_concurrency() / 2` 
 
 ## Benchmarks
 
